@@ -1,0 +1,192 @@
+<p>&nbsp;</p>
+<p>Introduction</p>
+<p>A Virtual Private Network (VPN) encrypts all network traffic, masking the users and protecting them from untrusted networks. It can provide a secure connection to a company network, bypass geo-restrictions, and allow you to surf the web using public Wi-Fi networks while keeping your data private.</p>
+<p>OpenVPN is a fully-featured, open-source Secure Socket Layer (SSL) VPN solution.</p>
+<p>Prerequisites</p>
+<p>A CentOS 7 or CentOS 8 server<br />A user account with root (sudo) access<br />Access to the command line/terminal window<br />A domain or subdomain that resolves to your server<br />A client machine from which you will connect to the OpenVPN server<br />Step 1: Install OpenVPN</p>
+<p>1. Update the CentOS repositories and packages by running:</p>
+<p>yum update -y</p>
+<p>2. You cannot download the OpenVPN package from the default CentOS repositories. However, OpenVPN is available in the Extra Packages for Enterprise Linux (EPEL) repository. To enable the EPEL repository, run the command:</p>
+<p>yum install epel-release -y</p>
+<p>&nbsp;</p>
+<p>3. Update the repositories again:</p>
+<p>yum update -y</p>
+<p>4. You can now install OpenVPN with the command:</p>
+<p>yum install -y openvpn</p>
+<p>&nbsp;</p>
+<p>Step 2: Install Easy RSA</p>
+<p>The next step is to build a Public Key Infrastructure (PKI). To do this, you need to install easy RSA, a CLI utility for creating and managing a PKI Certificate Authority (CA).</p>
+<p>Easy RSA helps you set up an internal certificate authority (CA) and generate SSL key pairs to secure the VPN connections.</p>
+<p>1. To download the easy RSA package, use the wget command. If you don&rsquo;t have wget on your CenOS system, install it by running:</p>
+<p>yum install -y wget</p>
+<p>2. At the time of writing, the latest version of the CLI utility is 3.0.8, which we will download. To use another version, check out easy RSA&rsquo;s release page on GitHub.</p>
+<p>wget https://github.com/OpenVPN/easy-rsa/archive/v3.0.8.tar.gz</p>
+<p>&nbsp;</p>
+<p><br />3. Next, extract the downloaded archive:</p>
+<p>tar -xf v3.0.8.tar.gz</p>
+<p>4. Create and move into a new openvpn directory:</p>
+<p>cd /etc/openvpn/</p>
+<p>5. Then, create a subdirectory easy-rsa under the path /etc/openvpn:</p>
+<p>mkdir /etc/openvpn/easy-rsa</p>
+<p>6. Move the extracted directory into /etc/openvpn/easy-rsa:</p>
+<p>mv /root/easy-rsa-3.0.8 /etc/openvpn/easy-rsa</p>
+<p>To check whether you have successfully moved everything from the easy-rsa-3.0.8 directory, move into easy-rsa with cd /etc/openvpn/easy-rsa and list the content with ls. You should see a list of files and folders, as in the image below.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><br />Step 3: Configure OpenVPN</p>
+<p>Once you have installed OpenVPN and Easy RSA, you can move on to configuring the OpenVPN server.</p>
+<p>The instructions in this section help you set up the basic configuration. You can alter it according to your needs.</p>
+<p>Before running any of the commands, make sure to return to the root directory. To do so, type cd in the terminal window and hit Enter.</p>
+<p>1. The first step is to copy the sample server.conf file from OpenVPN&rsquo;s documentation directory:</p>
+<p>cp /usr/share/doc/openvpn-2.4.9/sample/sample-config-files/server.conf /etc/openvpn</p>
+<p>If you cannot find the OpenVPN sample configuration file, search for its location using the find command:</p>
+<p>find / -name server.conf</p>
+<p>2. Then, open the copied configuration file with a text editor of your choice:</p>
+<p>vi etc/openvpn/server.conf</p>
+<p>The command opens the sample OpenVPN config file. The comments in the file begin with a hashtag # or a semicolon ;.</p>
+<p>&nbsp;</p>
+<p><br />3. To set up the basic configuration, you need to uncomment the following lines by removing the semicolons.</p>
+<p>topology subnet (makes the OpenVPN installation function as a subnetwork)<br />push "redirect-gateway def1 bypass-dhcp" (instructs the client to redirect traffic through the OpenVPN server)<br />push "dhcp-option DNS 208.67.222.222" (uses an OpenDNS resolver to connect to OpenVPN)<br />push "dhcp-option DNS 208.67.220.220" (uses an OpenDNS resolver to connect to OpenVPN)<br />user nobody (runs OpenVPN with no privileges)<br />group nobody (runs OpenVPN with no privileges)<br />4. Then, generate a static encryption key to enable TLS authentication. To do that, locate the line tls-auth ta.key 0 and comment it by adding ; in front of it. Then, add a new line under it:</p>
+<p>tls-crypt myvpn.tlsauth</p>
+<p>&nbsp;</p>
+<p><br />Note: The configuration file specifies which DNS servers to use to connect to OpenVPN. By default, it is set to use OpenDNS resolvers, which is how we left it. Alternatively, you can change it to different DNS resolvers by modifying the push "dhcp-option DNS 208.67.222.222" and push "dhcp-option DNS 208.67.220.220" lines.</p>
+<p>5. Save and exit the configuration file.</p>
+<p>6. Finally, generate the static encryption key specified in the file with the command:</p>
+<p>openvpn --genkey --secret /etc/openvpn/myvpn.tlsauth</p>
+<p>Note: Check out our guide on how to install OpenVPN on Docker.</p>
+<p>Step 4: Generate Keys and Certificates</p>
+<p>1. Create a vars configuration file using vars.example stored in the /easy-rsa/easyrsa3 directory. Move into the mentioned directory with:</p>
+<p>cd /etc/openvpn/easy-rsa/easyrsa3</p>
+<p>2. You can list the contents using the ls command to check whether you have the vars.example file.</p>
+<p>&nbsp;</p>
+<p><br />3. Copy the sample file vars.example under the name vars:</p>
+<p>cp vars.example vars</p>
+<p>If you list the files in the directory again, you should have a separate vars file that you can use to configure Easy RSA.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>4. Open the vars file in a text editor of your choice:</p>
+<p>vi vars</p>
+<p>5. Scroll through the file and find the lines listed below.</p>
+<p>#set_var EASYRSA_REQ_COUNTRY "US"</p>
+<p>#set_var EASYRSA_REQ_PROVINCE "California"</p>
+<p>#set_var EASYRSA_REQ_CITY "San Francisco"</p>
+<p>#set_var EASYRSA_REQ_ORG "Copyleft Certificate Co"</p>
+<p>#set_var EASYRSA_REQ_EMAIL "me@example.net"</p>
+<p>#set_var EASYRSA_REQ_OU "My Organizational Unit"</p>
+<p>6. Uncomment the lines by removing # and replace the default values with your information.</p>
+<p>7. Then, find the line specifying the KEY_NAME and change it to "server":</p>
+<p>export KEY_NAME="server"</p>
+<p>8. Finally, change KEY_CN to the domain or subdomain that resolves to your server.</p>
+<p>export KEY_CN=openvpn.yourdomain.com</p>
+<p>9. Save and close the file.</p>
+<p>10. Clean up any previous keys and generate the certificate authority:</p>
+<p>./easyrsa clean-all</p>
+<p>&nbsp;</p>
+<p><br />11. Now, you can move on to building the certificate authority with the build-ca script. Run the command:</p>
+<p>./easyrsa build-ca</p>
+<p>You will be asked to set a CA Key Passphrase and a common name for your CA.</p>
+<p>&nbsp;</p>
+<p><br />Note: To skip password authentication each time you sign your certificates, you can use the ./easyrsa build-ca nopass command.</p>
+<p>12. Create a key and certificate for the server:</p>
+<p>./easyrsa build-server-full server</p>
+<p>&nbsp;</p>
+<p><br />13. Next, generate a Diffie-Hellman key exchange file by running:</p>
+<p>./easyrsa gen-dh</p>
+<p>&nbsp;</p>
+<p><br />14. You also need a certificate for each client. Generate them on the server and then copy them on the client machine.</p>
+<p>With the following command, we create a certificate and key for client1. You can modify the command by using a name of your choice.</p>
+<p>./easyrsa build-client-full client1</p>
+<p>&nbsp;</p>
+<p><br />15. Once you have generated the keys and certificates, copy them from pki into the openvpn directory. To do so, navigate to the pki directory by running:</p>
+<p>cd /etc/openvpn/easy-rsa/easyrsa3/pki</p>
+<p>You need to copy four files in total:</p>
+<p>ca.crt<br />dh.pem<br />ca.key<br />server.key<br />The first two files (ca.crt and dh.pem) are stored in the pki directory, while ca.key and server.key are in a subdirectory pki/private.</p>
+<p>&nbsp;</p>
+<p><br />Therefore, copy ca.crt and dh.pem into the openvpn directory first:</p>
+<p>cp ca.crt dh.pem /etc/openvpn</p>
+<p>Then, move into the subdirectory private, and copy ca.key and server.key by running:</p>
+<p>cd private</p>
+<p>cp ca.key server.key/etc/openvpn</p>
+<p>Step 5: Firewall and Routing Configuration</p>
+<p>Set Firewall Rules</p>
+<p>1. Start by checking your active firewalld zone:</p>
+<p>firewall-cmd --get-active-zones</p>
+<p>The output will show your firewalld zone. In the example below, it is public.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>2. Add the openvpn service to the list of services firewalld allows within the active zone. The active zone in our example is public. If your active zone is trusted, modify the command accordingly.</p>
+<p>firewall-cmd --zone=public --add-service openvpn</p>
+<p>3. Next, make the settings above permanent by running the command:</p>
+<p>firewall-cmd --zone=public --add-service openvpn --permanent</p>
+<p>4. To check whether the openvpn service was added use:</p>
+<p>firewall-cmd --list-services --zone=public</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>5. Then, add a masquerade to the runtime instance:</p>
+<p>firewall-cmd --add-masquerade</p>
+<p>6. And make it permanent:</p>
+<p>firewall-cmd --add-masquerade --permanent</p>
+<p>7. Verify the masquerade was added by running:</p>
+<p>firewall-cmd --query-masquerade</p>
+<p>The output should respond with yes.</p>
+<p>&nbsp;</p>
+<p><br />Routing the Configuration</p>
+<p>Once you have completed the steps above, move on to routing to your OpenVPN subnet.</p>
+<p>1. Create a variable that represents the primary network interface used by your server. In the command below, the variable is named VAR. However, you can create a variable under the name of your choice.</p>
+<p>VAR=$(ip route get 208.67.222.222 | awk 'NR==1 {print $(NF-2)}')</p>
+<p>2. Next, permanently add the routing rule using the variable created above:</p>
+<p>firewall-cmd --permanent --direct --passthrough ipv4 -t nat -A POSTROUTING -s 10.8.0.0/24 -o $VAR -j MASQUERADE</p>
+<p>3. Reload firewalld for the changes to take place:</p>
+<p>firewall-cmd --reload</p>
+<p>4. Move on to routing all web traffic from the client to the server&rsquo;s IP address by enabling IP forwarding. Open the sysctl.conf file:</p>
+<p>vi /etc/sysctl.conf</p>
+<p>5. Add the following line at the top of the file:</p>
+<p>net.ipv4.ip_forward = 1</p>
+<p>6. Finally, restart the service:</p>
+<p>systemctl restart network.service</p>
+<p>Step 6: Start OpenVPN</p>
+<p>1. To start the OpenVPN service, run the command:</p>
+<p>systemctl -f start openvpn@server.service</p>
+<p>2. Then, enable it to start up at boot by running:</p>
+<p>systemctl -f enable openvpn@server.service</p>
+<p>3. Verify the service is active with:</p>
+<p>systemctl status openvpn@server.service</p>
+<p>The output should respond that the OpenVPN service for the server is active (running).</p>
+<p>Step 7: Configure a OpenVPN Client</p>
+<p>With everything set up on the OpenVPN server, you can configure your client machine and connect it to the server.</p>
+<p>As mentioned in Step 4, each client machine needs to have local copies of the CA certificate, client key, SSL certificate, and the encryption key.</p>
+<p>1. Find and copy the following files from the server to the client machine:</p>
+<p>/etc/openvpn/easy-rsa/easyrsa3/pki/ca.crt<br />/etc/openvpn/easy-rsa/easyrsa3/pki/client.crt<br />/etc/openvpn/easy-rsa/easyrsa3/pki/private/client.key<br />/etc/openvpn/myvpn.tlsauth<br />2. Then, create a configuration file for the OpenVPN client under the name client.ovpn on the client machine:</p>
+<p>vi client.ovpn</p>
+<p>3. Add the following content to the file:</p>
+<p>client</p>
+<p>tls-client</p>
+<p>ca /path/to/ca.crt</p>
+<p>cert /path/to/client.crt</p>
+<p>key /path/to/client.key</p>
+<p>tls-crypt /path/to/myvpn.tlsauth</p>
+<p>remote-cert-eku "TLS Web Client Authentication"</p>
+<p>proto udp</p>
+<p>remote your_server_ip 1194 udp</p>
+<p>dev tun</p>
+<p>topology subnet</p>
+<p>pull</p>
+<p>user nobody</p>
+<p>group nobody</p>
+<p>Make sure to replace the bolded parts with your respected values.</p>
+<p>&nbsp;</p>
+<p><br />4. Save and close the file.</p>
+<p>Step 8: Connect a Client to OpenVPN</p>
+<p>The instructions on how to connect to OpenVPN differ depending on your client machine&rsquo;s operating system.</p>
+<p>For Linux Users</p>
+<p>To connect to OpenVPN, run the command:</p>
+<p>openvpn --config /path/to/client.ovpn</p>
+<p>For Windows Users</p>
+<p>1. First, copy the client.ovpn configuration file in the C:Program FilesOpenVPNconfig directory.</p>
+<p>2. Download and install the OpenVPN application. You can find the latest build on the OpenVPN Community Downloads page. Once you have installed the application, launch OpenVPN.</p>
+<p>3. Right-click the OpenVPN system tray icon and select Connect. To perform this task, you need administrative privileges.</p>
+<p>For macOS Users</p>
+<p>You can connect to OpenVPN from a macOS system using Tunnelblick (an open-source graphic user interface for OpenVPN on OS X and macOS).</p>
+<p>Before launching Tunnelblick, make sure to store the client.ovpn configuration file in the ~/Library/Application Support/Tunnelblick/Configurations directory.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
