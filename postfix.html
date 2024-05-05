@@ -1,291 +1,40 @@
-The installation and configuration of Mail Server With PostfixAdmin on a CentOS 7 server will be demonstrated in this tutorial. For those of you who weren't aware, Postfixadmin is the web interface for the MariaDB or MySQL database that Postfix uses. We can simply administer our Postfix service with Postfixadmin from a web browser, adding and removing mail users and domains, mail aliases, disk quotas, etc.
 
-Update the system and install necessary packages
-yum update && yum install wget nano
+<p>The installation and configuration of Mail Server With PostfixAdmin on a CentOS 7 server will be demonstrated in this tutorial. For those of you who weren't aware, Postfixadmin is the web interface for the MariaDB or MySQL database that Postfix uses. We can simply administer our Postfix service with Postfixadmin from a web browser, adding and removing mail users and domains, mail aliases, disk quotas, etc.</p>
 
-Create system user
-For security reasons, we will create a new system user who will be the owner of all mailboxes.
- 
-useradd -r -u 150 -g mail -d /var/vmail -s /sbin/nologin -c "Virtual Mail User" vmail
-mkdir -p /var/vmail
-chmod -R 770 /var/vmail
-chown -R vmail:mail /var/vmail
- 
-Install MariaDB
-MariaDB 5.5 is shipped in the default CentOS 7 repository, to install it just run:
-yum install mariadb-server
+<p>Update the system and install necessary packages yum update &amp;&amp; yum install wget nano</p>
 
-To start the MariaDB service and enable it to start on boot, execute the following commands:
-systemctl start mariadb.service
-systemctl enable mariadb.service
+<p>Create system user For security reasons, we will create a new system user who will be the owner of all mailboxes.   useradd -r -u 150 -g mail -d /var/vmail -s /sbin/nologin -c &quot;Virtual Mail User&quot; vmail mkdir -p /var/vmail chmod -R 770 /var/vmail chown -R vmail:mail /var/vmail   Install MariaDB MariaDB 5.5 is shipped in the default CentOS 7 repository, to install it just run: yum install mariadb-server</p>
 
-Run the following command to secure your MariaDB installation:
-mysql_secure_installation
+<p>To start the MariaDB service and enable it to start on boot, execute the following commands: systemctl start mariadb.service systemctl enable mariadb.service</p>
 
-Next, we need to create a database for our postfixadmin instance.
-mysql -uroot -p
-MariaDB [(none)]> CREATE DATABASE postfixadmin;
-MariaDB [(none)]> GRANT ALL PRIVILEGES ON postfixadmin.* TO 'postfixadmin'@'localhost' IDENTIFIED BY 'strong_password';
-MariaDB [(none)]> FLUSH PRIVILEGES;
-MariaDB [(none)]> \q
- 
- 
-Install PHP and all necessary PHP modules
- 
-CentOS 7 ships with PHP version 5.4, to install PHP and necessary modules, run:
-yum install php php-mysql php-imap php-mbstring php-common
+<p>Run the following command to secure your MariaDB installation: mysql_secure_installation</p>
 
-If you don’t have Apache installed, install it with:
-yum install httpd
+<p>Next, we need to create a database for our postfixadmin instance. mysql -uroot -p MariaDB [(none)]> CREATE DATABASE postfixadmin; MariaDB [(none)]> GRANT ALL PRIVILEGES ON postfixadmin.* TO 'postfixadmin'@'localhost' IDENTIFIED BY 'strong_password'; MariaDB [(none)]> FLUSH PRIVILEGES; MariaDB [(none)]> \q     Install PHP and all necessary PHP modules   CentOS 7 ships with PHP version 5.4, to install PHP and necessary modules, run: yum install php php-mysql php-imap php-mbstring php-common</p>
 
-Install PostfixAdmin
- 
-wget -q -O - "https://downloads.sourceforge.net/project/postfixadmin/postfixadmin/postfixadmin-3.0.2/postfixadmin-3.0.2.tar.gz" | tar -xzf - -C /var/www/html
+<p>If you don&rsquo;t have Apache installed, install it with: yum install httpd</p>
 
-Open the mail configuration file and edit the following values:
- 
-nano /var/www/html/postfixadmin-3.0.2/config.inc.php
-$CONF['configured'] = true;
-$CONF['database_type'] = 'mysqli';
-$CONF['database_host'] = 'localhost';
-$CONF['database_user'] = 'postfixadmin';
-$CONF['database_password'] = 'strong_password';
-$CONF['database_name'] = 'postfixadmin';
-$CONF['domain_path'] = 'NO';
-$CONF['domain_in_mailbox'] = 'YES';
-chown -R apache: /var/www/html/postfixadmin-3.0.2
- 
-vim /var/www/html/postfixadmin/config.inc.php
- 
-$CONF[‘show_password’] = ‘YES’;
-$CONF[‘page_size’] = ’30’;
-$CONF[‘transport’] = ‘YES’;
-$CONF[‘vacation’] = ‘YES’;
-$CONF[‘vacation_domain’] = ‘autoreply. worldcm.net’;
-$CONF[‘vacation_control’] =’YES’;
- 
-If your domain do not exist, activate this
- 
-$CONF['emailcheck_resolve_domain']='NO';
- 
-Create a new admin user:
-bash /var/www/html/postfixadmin-3.0.2/scripts/postfixadmin-cli admin add admin@your_domain_name.com --password strong_password22 --password2 strong_password22 --superadmin 1 --active 1
+<p>Install PostfixAdmin   wget -q -O - &quot;https://downloads.sourceforge.net/project/postfixadmin/postfixadmin/postfixadmin-3.0.2/postfixadmin-3.0.2.tar.gz&quot; | tar -xzf - -C /var/www/html</p>
 
-Install and configure postfix
+<p>Open the mail configuration file and edit the following values:   nano /var/www/html/postfixadmin-3.0.2/config.inc.php $CONF['configured'] = true; $CONF['database_type'] = 'mysqli'; $CONF['database_host'] = 'localhost'; $CONF['database_user'] = 'postfixadmin'; $CONF['database_password'] = 'strong_password'; $CONF['database_name'] = 'postfixadmin'; $CONF['domain_path'] = 'NO'; $CONF['domain_in_mailbox'] = 'YES'; chown -R apache: /var/www/html/postfixadmin-3.0.2   vim /var/www/html/postfixadmin/config.inc.php   $CONF[&lsquo;show_password&rsquo;] = &lsquo;YES&rsquo;; $CONF[&lsquo;page_size&rsquo;] = &rsquo;30&rsquo;; $CONF[&lsquo;transport&rsquo;] = &lsquo;YES&rsquo;; $CONF[&lsquo;vacation&rsquo;] = &lsquo;YES&rsquo;; $CONF[&lsquo;vacation_domain&rsquo;] = &lsquo;autoreply. worldcm.net&rsquo;; $CONF[&lsquo;vacation_control&rsquo;] =&rsquo;YES&rsquo;;   If your domain do not exist, activate this   $CONF['emailcheck_resolve_domain']='NO';   Create a new admin user: bash /var/www/html/postfixadmin-3.0.2/scripts/postfixadmin-cli admin add admin@your_domain_name.com --password strong_password22 --password2 strong_password22 --superadmin 1 --active 1</p>
 
-To install postfix run the command bellow:
-yum install postfix
+<p>Install and configure postfix</p>
 
-Once the installation is completed, we need to create configuration files:
- 
-mkdir -p /etc/postfix/sql/
- 
-nano /etc/postfix/sql/mysql_virtual_alias_domain_catchall_maps.cf
-user = postfixadmin
-password = strong_password
-hosts = localhost
-dbname = postfixadmin
-query  = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = '%d' and alias.address = CONCAT('@', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active='1'
- 
-nano /etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf
-user = postfixadmin
-password = strong_password
-hosts = localhost
-dbname = postfixadmin
-query = SELECT maildir FROM mailbox,alias_domain WHERE alias_domain.alias_domain = '%d' and mailbox.username = CONCAT('%u', '@', alias_domain.target_domain) AND mailbox.active = 1 AND alias_domain.active='1'
- 
-nano /etc/postfix/sql/mysql_virtual_alias_domain_maps.cf
-user = postfixadmin
-password = strong_password
-hosts = localhost
-dbname = postfixadmin
-query = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = '%d' and alias.address = CONCAT('%u', '@', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active='1'
- 
-nano /etc/postfix/sql/mysql_virtual_alias_maps.cf
-user = postfixadmin
-password = strong_password
-hosts = localhost
-dbname = postfixadmin
-query = SELECT goto FROM alias WHERE address='%s' AND active = '1'
-#expansion_limit = 100
- 
-nano /etc/postfix/sql/mysql_virtual_domains_maps.cf
-user = postfixadmin
-password = strong_password
-hosts = localhost
-dbname = postfixadmin
-query          = SELECT domain FROM domain WHERE domain='%s' AND active = '1'
-#query          = SELECT domain FROM domain WHERE domain='%s'
-#optional query to use when relaying for backup MX
-#query           = SELECT domain FROM domain WHERE domain='%s' AND backupmx = '0' AND active = '1'
-#expansion_limit = 100
- 
-nano /etc/postfix/sql/mysql_virtual_mailbox_limit_maps.cf
-user = postfixadmin
-password = strong_password
-hosts = localhost
-dbname = postfixadmin
-query = SELECT quota FROM mailbox WHERE username='%s' AND active = '1'
- 
-nano /etc/postfix/sql/mysql_virtual_mailbox_maps.cf
-user = postfixadmin
-password = strong_password
-hosts = localhost
-dbname = postfixadmin
-query           = SELECT maildir FROM mailbox WHERE username='%s' AND active = '1'
-#expansion_limit = 100
- 
-Edit the main.cf file:
-postconf -e "myhostname = $(hostname -f)"
-postconf -e "virtual_mailbox_domains = proxy:mysql:/etc/postfix/sql/mysql_virtual_domains_maps.cf"
-postconf -e "virtual_alias_maps = proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_catchall_maps.cf"
-postconf -e "virtual_mailbox_maps = proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf"
-postconf -e "smtpd_tls_cert_file = /etc/pki/tls/certs/localhost.crt"
-postconf -e "smtpd_tls_key_file = /etc/pki/tls/private/localhost.key"
-postconf -e "smtpd_use_tls = yes"
-postconf -e "smtpd_tls_auth_only = yes"
-postconf -e "smtpd_sasl_type = dovecot"
-postconf -e "smtpd_sasl_path = private/auth"
-postconf -e "smtpd_sasl_auth_enable = yes"
-postconf -e "smtpd_recipient_restrictions = permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination"
-postconf -e "mydestination = localhost"
-postconf -e "mynetworks = 127.0.0.0/8"
-postconf -e "inet_protocols = ipv4"
-postconf -e "inet_interfaces = all"
-postconf -e "virtual_transport = lmtp:unix:private/dovecot-lmtp"
- 
-Open the master.cf file, find submission inet n and smtps inet n sections and edit as follows:
-nano /etc/postfix/master.cf
- 
-submission inet n       -       n       -       -       smtpd
-  -o syslog_name=postfix/submission
-  -o smtpd_tls_security_level=encrypt
-  -o smtpd_sasl_auth_enable=yes
-#  -o smtpd_reject_unlisted_recipient=no
-#  -o smtpd_client_restrictions=$mua_client_restrictions
-#  -o smtpd_helo_restrictions=$mua_helo_restrictions
-#  -o smtpd_sender_restrictions=$mua_sender_restrictions
-#  -o smtpd_recipient_restrictions=
-  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
-  -o milter_macro_daemon_name=ORIGINATING
-smtps     inet  n       -       n       -       -       smtpd
-  -o syslog_name=postfix/smtps
-#  -o smtpd_tls_wrappermode=yes
-  -o smtpd_sasl_auth_enable=yes
-#  -o smtpd_reject_unlisted_recipient=no
-#  -o smtpd_client_restrictions=$mua_client_restrictions
-#  -o smtpd_helo_restrictions=$mua_helo_restrictions
-#  -o smtpd_sender_restrictions=$mua_sender_restrictions
-#  -o smtpd_recipient_restrictions=
-  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
-  -o milter_macro_daemon_name=ORIGINATING
+<p>To install postfix run the command bellow: yum install postfix</p>
 
-Enable the postfix service
- 
-systemctl enable postfix
-systemctl restart postfix
- 
- 
-Install and Configure Dovecot
- 
-Install dovecot with MySQL support using the command bellow:
-yum install dovecot dovecot-mysql
+<p>Once the installation is completed, we need to create configuration files:   mkdir -p /etc/postfix/sql/   nano /etc/postfix/sql/mysql_virtual_alias_domain_catchall_maps.cf user = postfixadmin password = strong_password hosts = localhost dbname = postfixadmin query = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = '%d' and alias.address = CONCAT('@', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active='1'   nano /etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf user = postfixadmin password = strong_password hosts = localhost dbname = postfixadmin query = SELECT maildir FROM mailbox,alias_domain WHERE alias_domain.alias_domain = '%d' and mailbox.username = CONCAT('%u', '@', alias_domain.target_domain) AND mailbox.active = 1 AND alias_domain.active='1'   nano /etc/postfix/sql/mysql_virtual_alias_domain_maps.cf user = postfixadmin password = strong_password hosts = localhost dbname = postfixadmin query = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = '%d' and alias.address = CONCAT('%u', '@', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active='1'   nano /etc/postfix/sql/mysql_virtual_alias_maps.cf user = postfixadmin password = strong_password hosts = localhost dbname = postfixadmin query = SELECT goto FROM alias WHERE address='%s' AND active = '1' #expansion_limit = 100   nano /etc/postfix/sql/mysql_virtual_domains_maps.cf user = postfixadmin password = strong_password hosts = localhost dbname = postfixadmin query = SELECT domain FROM domain WHERE domain='%s' AND active = '1' #query = SELECT domain FROM domain WHERE domain='%s' #optional query to use when relaying for backup MX #query = SELECT domain FROM domain WHERE domain='%s' AND backupmx = '0' AND active = '1' #expansion_limit = 100   nano /etc/postfix/sql/mysql_virtual_mailbox_limit_maps.cf user = postfixadmin password = strong_password hosts = localhost dbname = postfixadmin query = SELECT quota FROM mailbox WHERE username='%s' AND active = '1'   nano /etc/postfix/sql/mysql_virtual_mailbox_maps.cf user = postfixadmin password = strong_password hosts = localhost dbname = postfixadmin query = SELECT maildir FROM mailbox WHERE username='%s' AND active = '1' #expansion_limit = 100   Edit the main.cf file: postconf -e &quot;myhostname = $(hostname -f)&quot; postconf -e &quot;virtual_mailbox_domains = proxy:mysql:/etc/postfix/sql/mysql_virtual_domains_maps.cf&quot; postconf -e &quot;virtual_alias_maps = proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_catchall_maps.cf&quot; postconf -e &quot;virtual_mailbox_maps = proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf&quot; postconf -e &quot;smtpd_tls_cert_file = /etc/pki/tls/certs/localhost.crt&quot; postconf -e &quot;smtpd_tls_key_file = /etc/pki/tls/private/localhost.key&quot; postconf -e &quot;smtpd_use_tls = yes&quot; postconf -e &quot;smtpd_tls_auth_only = yes&quot; postconf -e &quot;smtpd_sasl_type = dovecot&quot; postconf -e &quot;smtpd_sasl_path = private/auth&quot; postconf -e &quot;smtpd_sasl_auth_enable = yes&quot; postconf -e &quot;smtpd_recipient_restrictions = permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination&quot; postconf -e &quot;mydestination = localhost&quot; postconf -e &quot;mynetworks = 127.0.0.0/8&quot; postconf -e &quot;inet_protocols = ipv4&quot; postconf -e &quot;inet_interfaces = all&quot; postconf -e &quot;virtual_transport = lmtp:unix:private/dovecot-lmtp&quot;   Open the master.cf file, find submission inet n and smtps inet n sections and edit as follows: nano /etc/postfix/master.cf   submission inet n - n - - smtpd  -o syslog_name=postfix/submission  -o smtpd_tls_security_level=encrypt  -o smtpd_sasl_auth_enable=yes # -o smtpd_reject_unlisted_recipient=no # -o smtpd_client_restrictions=$mua_client_restrictions # -o smtpd_helo_restrictions=$mua_helo_restrictions # -o smtpd_sender_restrictions=$mua_sender_restrictions # -o smtpd_recipient_restrictions=  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject  -o milter_macro_daemon_name=ORIGINATING smtps inet n - n - - smtpd  -o syslog_name=postfix/smtps # -o smtpd_tls_wrappermode=yes  -o smtpd_sasl_auth_enable=yes # -o smtpd_reject_unlisted_recipient=no # -o smtpd_client_restrictions=$mua_client_restrictions # -o smtpd_helo_restrictions=$mua_helo_restrictions # -o smtpd_sender_restrictions=$mua_sender_restrictions # -o smtpd_recipient_restrictions=  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject  -o milter_macro_daemon_name=ORIGINATING</p>
 
-Open the /etc/dovecot/conf.d/10-mail.conf file and change the following values:
-nano /etc/dovecot/conf.d/10-mail.conf
-mail_location = maildir:/var/vmail/%d/%n
-mail_privileged_group = mail
-mail_uid = vmail
-mail_gid = mail
-first_valid_uid = 150
-last_valid_uid = 150
- 
-Open the /etc/dovecot/conf.d/10-auth.conf file and change the following values:
- 
-nano /etc/dovecot/conf.d/10-auth.conf
-auth_mechanisms = plain login
-#!include auth-system.conf.ext
-!include auth-sql.conf.ext
- 
-Create a new dovecot-sql.conf.ext file:
- 
-nano /etc/dovecot/dovecot-sql.conf.ext
-driver = mysql
-connect = host=localhost dbname=postfixadmin user=postfixadmin password=strong_password
-default_pass_scheme = MD5-CRYPT
-password_query = SELECT username as user, password, '/var/vmail/%d/%n' as userdb_home, 'maildir:/var/vmail/%d/%n' as userdb_mail, 150 as userdb_uid, 8 as userdb_gid FROM mailbox WHERE username = '%u' AND active = '1'
-user_query = SELECT '/var/vmail/%d/%u' as home, 'maildir:/var/vmail/%d/%u' as mail, 150 AS uid, 8 AS gid, concat('dirsize:storage=',  quota) AS quota FROM mailbox WHERE username = '%u' AND active = '1'
+<p>Enable the postfix service   systemctl enable postfix systemctl restart postfix     Install and Configure Dovecot   Install dovecot with MySQL support using the command bellow: yum install dovecot dovecot-mysql</p>
 
-In the /etc/dovecot/conf.d/10-ssl.conf file enable SSL support:
-ssl = yes
+<p>Open the /etc/dovecot/conf.d/10-mail.conf file and change the following values: nano /etc/dovecot/conf.d/10-mail.conf mail_location = maildir:/var/vmail/%d/%n mail_privileged_group = mail mail_uid = vmail mail_gid = mail first_valid_uid = 150 last_valid_uid = 150   Open the /etc/dovecot/conf.d/10-auth.conf file and change the following values:   nano /etc/dovecot/conf.d/10-auth.conf auth_mechanisms = plain login #!include auth-system.conf.ext !include auth-sql.conf.ext   Create a new dovecot-sql.conf.ext file:   nano /etc/dovecot/dovecot-sql.conf.ext driver = mysql connect = host=localhost dbname=postfixadmin user=postfixadmin password=strong_password default_pass_scheme = MD5-CRYPT password_query = SELECT username as user, password, '/var/vmail/%d/%n' as userdb_home, 'maildir:/var/vmail/%d/%n' as userdb_mail, 150 as userdb_uid, 8 as userdb_gid FROM mailbox WHERE username = '%u' AND active = '1' user_query = SELECT '/var/vmail/%d/%u' as home, 'maildir:/var/vmail/%d/%u' as mail, 150 AS uid, 8 AS gid, concat('dirsize:storage=', quota) AS quota FROM mailbox WHERE username = '%u' AND active = '1'</p>
 
-Open the /etc/dovecot/conf.d/15-lda.conf file and set the postmaster_address email address.
-postmaster_address = postmaster@your_domain_name.com
+<p>In the /etc/dovecot/conf.d/10-ssl.conf file enable SSL support: ssl = yes</p>
 
-Open the /etc/dovecot/conf.d/10-master.conf file, find the service lmtp section and change it to:
-service lmtp {
-  unix_listener /var/spool/postfix/private/dovecot-lmtp {
-    mode = 0600
-    user = postfix
-    group = postfix
-  }
-}
- 
-find the service auth section and change it to:
-service auth {
-  unix_listener /var/spool/postfix/private/auth {
-    mode = 0666
-    user = postfix
-    group = postfix
-  }
-  unix_listener auth-userdb {
-    mode = 0600
-    user = vmail
-    #group = vmail
-  }
-  user = dovecot
-}
- 
-Change the service auth-worker section to the following:
-service auth-worker {
-  user = vmail
-}
- 
-Set the permissions:
-chown -R vmail:dovecot /etc/dovecot
-chmod -R o-rwx /etc/dovecot
- 
-Enable and restart the dovecot service
-systemctl enable dovecot 
-systemctl restart dovecot 
- 
-Install and configure Spamassassin
+<p>Open the /etc/dovecot/conf.d/15-lda.conf file and set the postmaster_address email address. postmaster_address = postmaster@your_domain_name.com</p>
 
-Install spamassassin using the command bellow:
-yum install spamassassin
+<p>Open the /etc/dovecot/conf.d/10-master.conf file, find the service lmtp section and change it to: service lmtp {  unix_listener /var/spool/postfix/private/dovecot-lmtp {  mode = 0600  user = postfix  group = postfix  } }   find the service auth section and change it to: service auth {  unix_listener /var/spool/postfix/private/auth {  mode = 0666  user = postfix  group = postfix  }  unix_listener auth-userdb {  mode = 0600  user = vmail  #group = vmail  }  user = dovecot }   Change the service auth-worker section to the following: service auth-worker {  user = vmail }   Set the permissions: chown -R vmail:dovecot /etc/dovecot chmod -R o-rwx /etc/dovecot   Enable and restart the dovecot service systemctl enable dovecot  systemctl restart dovecot    Install and configure Spamassassin</p>
 
-Create a spamassassin system user:
-groupadd spamd
-useradd -g spamd -s /bin/false -d /var/log/spamassassin spamd
-chown spamd:spamd /var/log/spamassassin
- 
-Configure Postfix to use SpamAssassin
- 
-Open the master.cf file and edit as follows:
-nano /etc/postfix/master.cf
-change
-smtp      inet  n       -       n       -       -       smtpd
-with
-smtp      inet  n       -       n       -       -       smtpd -o content_filter=spamassassin
- 
-add the following line at the end of the file:
-spamassassin unix - n n - - pipe flags=R user=spamd argv=/usr/bin/spamc -e /usr/sbin/sendmail -oi -f ${sender} ${recipient}
+<p>Install spamassassin using the command bellow: yum install spamassassin</p>
 
-Enable and restart the spamassassin service
-systemctl enable spamassassin 
-systemctl restart spamassassin 
- 
-Restart the postfix service
-systemctl restart postfix
-________________________________________
-If everything is set up correctly now you should be able to log in to your PostfixAdmin backend by going to http://Your_IP_Address/postfixadmin-3.0.2.2 and create your first virtual domain and mailbox.
+<p>Create a spamassassin system user: groupadd spamd useradd -g spamd -s /bin/false -d /var/log/spamassassin spamd chown spamd:spamd /var/log/spamassassin   Configure Postfix to use SpamAssassin   Open the master.cf file and edit as follows: nano /etc/postfix/master.cf change smtp inet n - n - - smtpd with smtp inet n - n - - smtpd -o content_filter=spamassassin   add the following line at the end of the file: spamassassin unix - n n - - pipe flags=R user=spamd argv=/usr/bin/spamc -e /usr/sbin/sendmail -oi -f ${sender} ${recipient}</p>
+
+<p>Enable and restart the spamassassin service systemctl enable spamassassin  systemctl restart spamassassin    Restart the postfix service systemctl restart postfix ________________________________________ If everything is set up correctly now you should be able to log in to your PostfixAdmin backend by going to http://Your_IP_Address/postfixadmin-3.0.2.2 and create your first virtual domain and mailbox.</p>
